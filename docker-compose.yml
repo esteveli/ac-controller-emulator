@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  ac-controller:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: ac-controller
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mosquitto
+    networks:
+      - ac-network
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    networks:
+      - ac-network
+
+  # Configuration CLI service (run as needed)
+  ac-config:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: ac-config
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mosquitto
+    networks:
+      - ac-network
+    profiles:
+      - config
+    command: npm run config
+    stdin_open: true
+    tty: true
+
+networks:
+  ac-network:
+    driver: bridge
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:

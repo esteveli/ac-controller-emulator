@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  ac-controller-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: ac-controller-dev
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+    depends_on:
+      - mosquitto
+    networks:
+      - ac-network
+    command: npm run dev
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto-dev
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - ac-network
+
+  # Configuration CLI service for development
+  ac-config-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: ac-config-dev
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+    depends_on:
+      - mosquitto
+    networks:
+      - ac-network
+    profiles:
+      - config
+    command: npm run config:dev
+    stdin_open: true
+    tty: true
+
+networks:
+  ac-network:
+    driver: bridge
