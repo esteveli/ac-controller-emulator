@@ -10,6 +10,7 @@ import { ACState } from '../types/ACTypes';
 export class ACControllerService {
   private availabilityInterval?: NodeJS.Timeout;
   private stateInterval?: NodeJS.Timeout;
+  private discoveryInterval?: NodeJS.Timeout;
 
   constructor(
     @Inject(() => MQTTClient) private mqttClient: MQTTClient,
@@ -129,6 +130,11 @@ export class ACControllerService {
     this.stateInterval = setInterval(async () => {
       await this.publishAllStates();
     }, 60000);
+
+    // Publish Home Assistant discovery every 60 seconds (1 minute)
+    this.discoveryInterval = setInterval(async () => {
+      await this.publishHomeAssistantDiscovery();
+    }, 60000);
   }
 
   private async publishAvailability(): Promise<void> {
@@ -153,6 +159,9 @@ export class ACControllerService {
     }
     if (this.stateInterval) {
       clearInterval(this.stateInterval);
+    }
+    if (this.discoveryInterval) {
+      clearInterval(this.discoveryInterval);
     }
     
     const availableACs = this.acDataService.getAvailableACs();
